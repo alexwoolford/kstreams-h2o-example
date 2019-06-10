@@ -1,0 +1,7 @@
+
+idea/
+*.iml
+target/
+kafka-iris-data/target
+kstreams-iris-classification/target
+
