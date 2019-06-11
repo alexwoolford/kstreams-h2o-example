@@ -27,7 +27,7 @@ class IrisClassifier {
 
     IrisClassifier() throws IOException {
 
-        URL mojoSource = getClass().getClassLoader().getResource("DeepLearning_grid_1_AutoML_20190610_082604_model_3.zip");
+        URL mojoSource = getClass().getClassLoader().getResource("DeepLearning_grid_1_AutoML_20190610_224939_model_2.zip");
         MojoReaderBackend reader = MojoReaderBackendFactory.createReaderBackend(mojoSource, MojoReaderBackendFactory.CachingStrategy.MEMORY);
         MojoModel model = ModelMojoReader.readFrom(reader);
         modelWrapper = new EasyPredictModelWrapper(model);
@@ -76,11 +76,16 @@ class IrisClassifier {
 
             log.info("irisRecord (pre-classification): " + irisRecord);
 
+            double sepal_length = irisRecord.getSepalLength();
+            double sepal_width = irisRecord.getSepalWidth();
+            double petal_length = irisRecord.getPetalLength();
+            double petal_width = irisRecord.getPetalWidth();
+
             RowData row = new RowData();
-            row.put("sepal_length", irisRecord.getSepalLength());
-            row.put("sepal_width", irisRecord.getSepalWidth());
-            row.put("petal_length", irisRecord.getPetalLength());
-            row.put("petal_width", irisRecord.getPetalWidth());
+            row.put("sepal_length", sepal_length);
+            row.put("sepal_width", sepal_width);
+            row.put("petal_length", petal_length);
+            row.put("petal_width", petal_width);
 
             log.info("row: " + row);
 

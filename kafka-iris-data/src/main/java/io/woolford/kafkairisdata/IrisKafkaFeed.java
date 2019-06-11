@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.MappingIterator;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.csv.CsvMapper;
+import com.fasterxml.jackson.dataformat.csv.CsvSchema;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.annotation.EnableKafka;
 import org.springframework.kafka.core.KafkaTemplate;
@@ -30,7 +31,16 @@ public class IrisKafkaFeed {
     public IrisKafkaFeed() throws IOException {
 
         File csvFile = new File(getClass().getClassLoader().getResource("iris.csv").getFile());
-        MappingIterator<IrisRecord> irisIter = new CsvMapper().readerWithTypedSchemaFor(IrisRecord.class).readValues(csvFile);
+        CsvSchema schema = CsvSchema.builder()
+                .addColumn("sepalLength", CsvSchema.ColumnType.NUMBER)
+                .addColumn("sepalWidth", CsvSchema.ColumnType.NUMBER)
+                .addColumn("petalLength", CsvSchema.ColumnType.NUMBER)
+                .addColumn("petalWidth", CsvSchema.ColumnType.NUMBER)
+                .addColumn("species", CsvSchema.ColumnType.STRING)
+                .build().withHeader();
+
+        CsvMapper csvMapper = new CsvMapper();
+        MappingIterator<IrisRecord> irisIter = csvMapper.readerFor(IrisRecord.class).with(schema).readValues(csvFile);
         this.irisRecordList = irisIter.readAll();
 
     }

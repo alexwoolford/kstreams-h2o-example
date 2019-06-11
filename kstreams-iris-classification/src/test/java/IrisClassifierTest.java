@@ -18,7 +18,7 @@ public class IrisClassifierTest {
     @Test
     private void testClassifier() throws IOException, PredictException {
 
-        URL mojoSource = getClass().getClassLoader().getResource("DeepLearning_grid_1_AutoML_20190610_082604_model_3.zip");
+        URL mojoSource = getClass().getClassLoader().getResource("DeepLearning_grid_1_AutoML_20190610_224939_model_2.zip");
         MojoReaderBackend reader = MojoReaderBackendFactory.createReaderBackend(mojoSource, MojoReaderBackendFactory.CachingStrategy.MEMORY);
         MojoModel model = ModelMojoReader.readFrom(reader);
         EasyPredictModelWrapper modelWrapper = new EasyPredictModelWrapper(model);
