@@ -23,23 +23,18 @@ class IrisClassifier {
 
     final org.slf4j.Logger log = LoggerFactory.getLogger(IrisClassifier.class);
 
+    // The IrisClassifier constructor reads in the MOJO
     EasyPredictModelWrapper modelWrapper;
-
     IrisClassifier() throws IOException {
-
         URL mojoSource = getClass().getClassLoader().getResource("DeepLearning_grid_1_AutoML_20190610_224939_model_2.zip");
         MojoReaderBackend reader = MojoReaderBackendFactory.createReaderBackend(mojoSource, MojoReaderBackendFactory.CachingStrategy.MEMORY);
         MojoModel model = ModelMojoReader.readFrom(reader);
         modelWrapper = new EasyPredictModelWrapper(model);
-
-        for (String responseDomainValue: modelWrapper.getResponseDomainValues()){
-            log.info("response domain value : " + responseDomainValue);
-        }
-
     }
 
     void run() {
 
+        // set props for Kafka Steams app (see KafkaConstants)
         Properties props = new Properties();
         props.put(StreamsConfig.APPLICATION_ID_CONFIG, KafkaConstants.APPLICATION_ID);
         props.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, KafkaConstants.KAFKA_BROKERS);
@@ -48,18 +43,18 @@ class IrisClassifier {
 
         final StreamsBuilder builder = new StreamsBuilder();
 
+        // create a stream of the raw iris records
         KStream<String, String> irisStream = builder.stream("iris");
 
+        // classify the raw iris messages with the classifyIris function.
+        // then write the classified messages to the `iris-out-temp`.
         irisStream.map((key, value) -> {
             String classifiedValue = classifyIris(value);
-
-            log.info("classifiedValue: " + classifiedValue);
-
             return new KeyValue<>(key, classifiedValue);
         }).to("iris-out-temp");
 
+        // run it
         final Topology topology = builder.build();
-
         final KafkaStreams streams = new KafkaStreams(topology, props);
         streams.start();
 
@@ -70,36 +65,20 @@ class IrisClassifier {
 
     private String classifyIris(String irisJson) {
 
+
         try {
             ObjectMapper mapper = new ObjectMapper();
             IrisRecord irisRecord = mapper.readValue(irisJson, IrisRecord.class);
 
-            log.info("irisRecord (pre-classification): " + irisRecord);
-
-            double sepal_length = irisRecord.getSepalLength();
-            double sepal_width = irisRecord.getSepalWidth();
-            double petal_length = irisRecord.getPetalLength();
-            double petal_width = irisRecord.getPetalWidth();
-
             RowData row = new RowData();
-            row.put("sepal_length", sepal_length);
-            row.put("sepal_width", sepal_width);
-            row.put("petal_length", petal_length);
-            row.put("petal_width", petal_width);
-
-            log.info("row: " + row);
+            row.put("sepal_length", irisRecord.getSepalLength());
+            row.put("sepal_width", irisRecord.getSepalWidth());
+            row.put("petal_length", irisRecord.getPetalLength());
+            row.put("petal_width", irisRecord.getPetalWidth());
 
             MultinomialModelPrediction prediction = (MultinomialModelPrediction) modelWrapper.predict(row);
-
-            log.info("prediction.label: " + prediction.label);
-
             irisRecord.setPredictedSpecies(prediction.label);
-
-            log.info("irisRecord (post-classification): " + irisRecord);
-
             irisJson = mapper.writeValueAsString(irisRecord);
-
-            log.info("irisJson: " + irisJson);
 
         } catch (IOException|PredictException e) {
             log.error(e.getMessage());
