@@ -61,4 +61,4 @@ The Kafka Streams app can be scaled horizontally across multiple instances in or
 
 See the demo in action:
 
-[![machine learning with H2O and Kafka Streams](https://www.youtube.com/watch?v=cJDoczm70Bw/0.jpg)](https://www.youtube.com/watch?v=cJDoczm70Bw)
+[![machine learning with H2O and Kafka Streams](https://img.youtube.com/vi/cJDoczm70Bw/0.jpg)](https://www.youtube.com/watch?v=cJDoczm70Bw)
