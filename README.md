@@ -58,3 +58,7 @@ The AutoML function takes a dataset, creates a variety of predictive models, and
 The most accurate model is then downloaded as a "MOJO" (Model ObJect, Optimized), and deployed in a Kafka Streams app.
 
 The Kafka Streams app can be scaled horizontally across multiple instances in order to meet whatever throughput is required.
+
+See the demo in action:
+
+[![machine learning with H2O and Kafka Streams](https://www.youtube.com/watch?v=cJDoczm70Bw/0.jpg)](https://www.youtube.com/watch?v=cJDoczm70Bw)
