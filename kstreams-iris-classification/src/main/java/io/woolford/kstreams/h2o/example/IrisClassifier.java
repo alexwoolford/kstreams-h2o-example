@@ -12,6 +12,7 @@ import hex.genmodel.easy.prediction.MultinomialModelPrediction;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.*;
 import org.apache.kafka.streams.kstream.KStream;
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 
@@ -21,7 +22,7 @@ import java.util.Properties;
 
 class IrisClassifier {
 
-    final org.slf4j.Logger log = LoggerFactory.getLogger(IrisClassifier.class);
+    final Logger LOG = LoggerFactory.getLogger(IrisClassifier.class);
 
     // The IrisClassifier constructor reads in the MOJO
     EasyPredictModelWrapper modelWrapper;
@@ -48,9 +49,10 @@ class IrisClassifier {
 
         // classify the raw iris messages with the classifyIris function.
         // then write the classified messages to the `iris-out-temp`.
-        irisStream.map((key, value) -> {
+        irisStream.mapValues(value -> {
             String classifiedValue = classifyIris(value);
-            return new KeyValue<>(key, classifiedValue);
+            LOG.info(classifiedValue);
+            return classifiedValue;
         }).to("iris-out-temp");
 
         // run it
@@ -81,7 +83,7 @@ class IrisClassifier {
             irisJson = mapper.writeValueAsString(irisRecord);
 
         } catch (IOException|PredictException e) {
-            log.error(e.getMessage());
+            LOG.error(e.getMessage());
         }
 
         return irisJson;
