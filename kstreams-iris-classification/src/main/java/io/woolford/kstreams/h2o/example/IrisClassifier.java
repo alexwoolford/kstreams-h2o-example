@@ -37,8 +37,12 @@ class IrisClassifier {
 
         // set props for Kafka Steams app (see KafkaConstants)
         Properties props = new Properties();
-        props.put(StreamsConfig.APPLICATION_ID_CONFIG, KafkaConstants.APPLICATION_ID);
-        props.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, KafkaConstants.KAFKA_BROKERS);
+        props.put(StreamsConfig.APPLICATION_ID_CONFIG, "foo");
+        props.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, "xxxxx.aws.confluent.cloud:9092");
+        props.put(StreamsConfig.SECURITY_PROTOCOL_CONFIG, "SASL_SSL");
+        props.put("sasl.jaas.config", "org.apache.kafka.common.security.plain.PlainLoginModule   required username=\"xxxxx\"   password=\"xxxxx\";");
+        props.put("sssl.endpoint.identification.algorithm", "https");
+        props.put("sasl.mechanism", "PLAIN");
         props.put(StreamsConfig.DEFAULT_KEY_SERDE_CLASS_CONFIG, Serdes.String().getClass());
         props.put(StreamsConfig.DEFAULT_VALUE_SERDE_CLASS_CONFIG, Serdes.String().getClass());
 
@@ -53,7 +57,7 @@ class IrisClassifier {
             String classifiedValue = classifyIris(value);
             LOG.info(classifiedValue);
             return classifiedValue;
-        }).to("iris-out-temp");
+        }).to("iris-classified");
 
         // run it
         final Topology topology = builder.build();
