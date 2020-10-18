@@ -2,9 +2,20 @@
 
 The purpose of this project is to show how we can easily create a machine learning model and deploy it into production at scale.
 
+This example is based on the famous [iris dataset](https://en.wikipedia.org/wiki/Iris_flower_data_set), which is a classic classification problem where four numerical covariates (i.e. petal/sepal lengths and widths) are used to predict the iris species (i.e. setosa, versicolor, and virginica).
+
+![iris sepal petal diagram](img/iris_sepal_petal.png)
+
 There are two parts to this example:
-1. a Java Spring app that randomly streams records from the famous "iris" dataset to a topic.
-2. a Kafka Streams app that predicts the class of the iris messages using an h2o model.
+1. a Java Spring app that randomly streams records from the iris dataset to a topic: `iris`.
+2. a Kafka Streams app that consumes records from the `iris` topic, predicts the iris species, and outputs those preductions to another topic: `iris-classified`:
+
+![iris streams diagram](img/iris_streams.png)
+
+To run this in your environment, you'll want to edit the values in the following two properties files:
+ - `kafka-iris-data/src/main/resources/application.properties`
+ - `kstreams-iris-classification/src/main/resources/config.properties`
+
 
 The ML model was generated using h2o's AutoML function in a few lines of Python:
 
