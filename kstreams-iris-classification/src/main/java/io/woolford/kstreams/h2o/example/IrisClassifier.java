@@ -16,6 +16,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.URL;
 import java.util.Properties;
@@ -33,16 +34,16 @@ class IrisClassifier {
         modelWrapper = new EasyPredictModelWrapper(model);
     }
 
-    void run() {
+    void run() throws IOException {
 
-        // set props for Kafka Steams app (see KafkaConstants)
+        // create and load default properties
         Properties props = new Properties();
-        props.put(StreamsConfig.APPLICATION_ID_CONFIG, "foo");
-        props.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, "xxxxx.aws.confluent.cloud:9092");
-        props.put(StreamsConfig.SECURITY_PROTOCOL_CONFIG, "SASL_SSL");
-        props.put("sasl.jaas.config", "org.apache.kafka.common.security.plain.PlainLoginModule   required username=\"xxxxx\"   password=\"xxxxx\";");
-        props.put("sssl.endpoint.identification.algorithm", "https");
-        props.put("sasl.mechanism", "PLAIN");
+        String rootPath = Thread.currentThread().getContextClassLoader().getResource("").getPath();
+        String propsPath = rootPath + "config.properties";
+        FileInputStream in = new FileInputStream(propsPath);
+        props.load(in);
+        in.close();
+
         props.put(StreamsConfig.DEFAULT_KEY_SERDE_CLASS_CONFIG, Serdes.String().getClass());
         props.put(StreamsConfig.DEFAULT_VALUE_SERDE_CLASS_CONFIG, Serdes.String().getClass());
 
@@ -93,6 +94,5 @@ class IrisClassifier {
         return irisJson;
 
     }
-
 
 }
