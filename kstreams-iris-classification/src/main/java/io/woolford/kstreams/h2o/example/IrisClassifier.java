@@ -1,6 +1,5 @@
 package io.woolford.kstreams.h2o.example;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import hex.genmodel.ModelMojoReader;
 import hex.genmodel.MojoModel;
 import hex.genmodel.MojoReaderBackend;
@@ -9,8 +8,10 @@ import hex.genmodel.easy.EasyPredictModelWrapper;
 import hex.genmodel.easy.RowData;
 import hex.genmodel.easy.exception.PredictException;
 import hex.genmodel.easy.prediction.MultinomialModelPrediction;
+import io.woolford.kstreams.h2o.example.serde.IrisRecordSerde;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.*;
+import org.apache.kafka.streams.kstream.Consumed;
 import org.apache.kafka.streams.kstream.KStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,21 +45,23 @@ class IrisClassifier {
         props.load(in);
         in.close();
 
+        IrisRecordSerde irisRecordSerde = new IrisRecordSerde();
+
         props.put(StreamsConfig.DEFAULT_KEY_SERDE_CLASS_CONFIG, Serdes.String().getClass());
-        props.put(StreamsConfig.DEFAULT_VALUE_SERDE_CLASS_CONFIG, Serdes.String().getClass());
+        props.put(StreamsConfig.DEFAULT_VALUE_SERDE_CLASS_CONFIG, irisRecordSerde.getClass());
 
         final StreamsBuilder builder = new StreamsBuilder();
 
         // create a stream of the raw iris records
-        KStream<String, String> irisStream = builder.stream("iris");
+        KStream<String, IrisRecord> irisStream = builder.stream("iris", Consumed.with(Serdes.String(), irisRecordSerde));
 
         // classify the raw iris messages with the classifyIris function.
-        // then write the classified messages to the `iris-out-temp`.
-        irisStream.mapValues(value -> {
-            String classifiedValue = classifyIris(value);
-            LOG.info(classifiedValue);
-            return classifiedValue;
-        }).to("iris-classified");
+        KStream<String, IrisRecord> irisStreamClassified = irisStream.mapValues(value -> {
+            return classifyIris(value);
+        });
+
+        // write the classified records back to Kafka
+        irisStreamClassified.to("iris-classified");
 
         // run it
         final Topology topology = builder.build();
@@ -70,13 +73,9 @@ class IrisClassifier {
 
     }
 
-    private String classifyIris(String irisJson) {
-
+    private IrisRecord classifyIris(IrisRecord irisRecord) {
 
         try {
-            ObjectMapper mapper = new ObjectMapper();
-            IrisRecord irisRecord = mapper.readValue(irisJson, IrisRecord.class);
-
             RowData row = new RowData();
             row.put("sepal_length", irisRecord.getSepalLength());
             row.put("sepal_width", irisRecord.getSepalWidth());
@@ -85,13 +84,12 @@ class IrisClassifier {
 
             MultinomialModelPrediction prediction = (MultinomialModelPrediction) modelWrapper.predict(row);
             irisRecord.setPredictedSpecies(prediction.label);
-            irisJson = mapper.writeValueAsString(irisRecord);
 
-        } catch (IOException|PredictException e) {
+        } catch (PredictException e) {
             LOG.error(e.getMessage());
         }
 
-        return irisJson;
+        return irisRecord;
 
     }
 
