@@ -68,6 +68,23 @@ The AutoML function takes a dataset, creates a variety of predictive models, and
 
 The most accurate model is then downloaded as a "MOJO" (Model ObJect, Optimized), and deployed in a Kafka Streams app.
 
+The model outputs data to a couple of topics. `iris-classified` contains the predictions:
+
+    # kafka-console-consumer --bootstrap-server localhost:9092 --topic iris-classified
+    {"sepalLength":6.7,"sepalWidth":3.3,"petalLength":5.7,"petalWidth":2.5,"species":"virginica","predictedSpecies":"virginica"}
+    {"sepalLength":6.5,"sepalWidth":3.0,"petalLength":5.5,"petalWidth":1.8,"species":"virginica","predictedSpecies":"virginica"}
+    {"sepalLength":6.3,"sepalWidth":2.3,"petalLength":4.4,"petalWidth":1.3,"species":"versicolor","predictedSpecies":"versicolor"}
+    {"sepalLength":5.8,"sepalWidth":4.0,"petalLength":1.2,"petalWidth":0.2,"species":"setosa","predictedSpecies":"setosa"}
+    {"sepalLength":4.6,"sepalWidth":3.1,"petalLength":1.5,"petalWidth":0.2,"species":"setosa","predictedSpecies":"setosa"}
+
+And `iris-classified-window-counts` shows per-minute counts for each actual/predicted pair:
+
+    # kafka-console-consumer --bootstrap-server localhost:9092 --topic iris-classified-window-counts
+    {"species":"versicolor","predictedSpecies":"virginica","startMs":1604302260000,"endMs":1604302320000,"count":1}
+    {"species":"versicolor","predictedSpecies":"versicolor","startMs":1604302260000,"endMs":1604302320000,"count":10}
+    {"species":"setosa","predictedSpecies":"setosa","startMs":1604302260000,"endMs":1604302320000,"count":14}
+    {"species":"virginica","predictedSpecies":"virginica","startMs":1604302260000,"endMs":1604302320000,"count":19}
+
 The Kafka Streams app can be scaled horizontally across multiple instances in order to meet whatever throughput is required.
 
 See the demo in action:

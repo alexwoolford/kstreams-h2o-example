@@ -9,10 +9,9 @@ import hex.genmodel.easy.RowData;
 import hex.genmodel.easy.exception.PredictException;
 import hex.genmodel.easy.prediction.MultinomialModelPrediction;
 import io.woolford.kstreams.h2o.example.serde.IrisRecordSerde;
-import org.apache.kafka.common.serialization.Serdes;
+import io.woolford.kstreams.h2o.example.serde.IrisPredictionRecordSerde;
 import org.apache.kafka.streams.*;
-import org.apache.kafka.streams.kstream.Consumed;
-import org.apache.kafka.streams.kstream.KStream;
+import org.apache.kafka.streams.kstream.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -20,6 +19,7 @@ import org.slf4j.LoggerFactory;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.URL;
+import java.time.Duration;
 import java.util.Properties;
 
 class IrisClassifier {
@@ -46,26 +46,58 @@ class IrisClassifier {
         in.close();
 
         IrisRecordSerde irisRecordSerde = new IrisRecordSerde();
+        IrisPredictionRecordSerde irisPredictionRecordSerde = new IrisPredictionRecordSerde();
 
-        props.put(StreamsConfig.DEFAULT_KEY_SERDE_CLASS_CONFIG, Serdes.String().getClass());
+        props.put(StreamsConfig.DEFAULT_KEY_SERDE_CLASS_CONFIG, irisPredictionRecordSerde.getClass());
         props.put(StreamsConfig.DEFAULT_VALUE_SERDE_CLASS_CONFIG, irisRecordSerde.getClass());
 
         final StreamsBuilder builder = new StreamsBuilder();
 
         // create a stream of the raw iris records
-        KStream<String, IrisRecord> irisStream = builder.stream("iris", Consumed.with(Serdes.String(), irisRecordSerde));
+        KStream<IrisClassifiedRecord, IrisRecord> irisStream = builder.stream("iris", Consumed.with(irisPredictionRecordSerde, irisRecordSerde));
 
         // classify the raw iris messages with the classifyIris function.
-        KStream<String, IrisRecord> irisStreamClassified = irisStream.mapValues(value -> {
-            return classifyIris(value);
+        KStream<IrisClassifiedRecord, IrisRecord> irisStreamClassified = irisStream.map((k, v) -> {
+
+            // predict the species
+            IrisRecord irisRecord = classifyIris(v);
+
+            // create actual/predicted record
+            IrisClassifiedRecord irisClassifiedRecord = new IrisClassifiedRecord();
+            irisClassifiedRecord.setSpecies(irisRecord.getSpecies());
+            irisClassifiedRecord.setPredictedSpecies(irisRecord.getPredictedSpecies());
+
+            return new KeyValue<>(irisClassifiedRecord, classifyIris(v));
         });
 
         // write the classified records back to Kafka
         irisStreamClassified.to("iris-classified");
 
+        // one-minute interval
+        TimeWindows interval = TimeWindows.of(Duration.ofMinutes(1));
+
+        // create one-minute tumbling windows containing actual/predicted counts
+        KTable<Windowed<IrisClassifiedRecord>, Long> irisClassifiedWindowCounts = irisStreamClassified
+                .selectKey((k, v) -> k)
+                .groupByKey()
+                .windowedBy(TimeWindows.of(interval.sizeMs))
+                .count();
+
+        // write the windowed counts to iris-classified-window topic
+        irisClassifiedWindowCounts.toStream().map((k, v) -> {
+            IrisClassifiedWindowRecord irisClassifiedWindowRecord = new IrisClassifiedWindowRecord();
+            irisClassifiedWindowRecord.setSpecies(k.key().getSpecies());
+            irisClassifiedWindowRecord.setPredictedSpecies(k.key().getPredictedSpecies());
+            irisClassifiedWindowRecord.setStartMs(k.window().start());
+            irisClassifiedWindowRecord.setEndMs(k.window().end());
+            irisClassifiedWindowRecord.setCount(v);
+            return new KeyValue(null, irisClassifiedWindowRecord);
+        }).to("iris-classified-window-counts");
+
         // run it
         final Topology topology = builder.build();
         final KafkaStreams streams = new KafkaStreams(topology, props);
+        streams.cleanUp();
         streams.start();
 
         // Add shutdown hook to respond to SIGTERM and gracefully close Kafka Streams
