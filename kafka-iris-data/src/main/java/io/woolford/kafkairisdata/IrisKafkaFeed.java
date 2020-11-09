@@ -41,6 +41,8 @@ public class IrisKafkaFeed {
 
     }
 
+    //TODO: create iris topic using Admin API so this works with Confluent Cloud
+
     @Scheduled(fixedDelay = 1000L)
     private void publishIrisRecord() throws JsonProcessingException {
 

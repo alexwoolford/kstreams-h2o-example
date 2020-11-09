@@ -99,8 +99,14 @@ class IrisClassifier {
             return new KeyValue(null, irisClassifiedWindowRecord);
         }).to("iris-classified-window-counts");
 
+        //TODO: add topic with correct classification percentage
+
         // run it
         final Topology topology = builder.build();
+
+        // show topology
+        LOG.info(topology.describe().toString());
+
         final KafkaStreams streams = new KafkaStreams(topology, props);
         streams.cleanUp();
         streams.start();
@@ -131,7 +137,7 @@ class IrisClassifier {
     }
 
     private void createTopics(Properties props){
-        
+
         AdminClient client = AdminClient.create(props);
 
         List<NewTopic> topics = new ArrayList<>();
