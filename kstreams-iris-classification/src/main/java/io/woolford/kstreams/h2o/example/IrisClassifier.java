@@ -10,6 +10,8 @@ import hex.genmodel.easy.exception.PredictException;
 import hex.genmodel.easy.prediction.MultinomialModelPrediction;
 import io.woolford.kstreams.h2o.example.serde.IrisRecordSerde;
 import io.woolford.kstreams.h2o.example.serde.IrisPredictionRecordSerde;
+import org.apache.kafka.clients.admin.AdminClient;
+import org.apache.kafka.clients.admin.NewTopic;
 import org.apache.kafka.streams.*;
 import org.apache.kafka.streams.kstream.*;
 import org.slf4j.Logger;
@@ -20,7 +22,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.URL;
 import java.time.Duration;
-import java.util.Properties;
+import java.util.*;
 
 class IrisClassifier {
 
@@ -50,6 +52,21 @@ class IrisClassifier {
 
         props.put(StreamsConfig.DEFAULT_KEY_SERDE_CLASS_CONFIG, irisPredictionRecordSerde.getClass());
         props.put(StreamsConfig.DEFAULT_VALUE_SERDE_CLASS_CONFIG, irisRecordSerde.getClass());
+
+
+        // create topics
+        AdminClient client = AdminClient.create(props);
+
+        List<NewTopic> topics = new ArrayList<>();
+        for (String topicName : ((String) props.get("topics")).split(",")){
+            LOG.info(topicName);
+            NewTopic topic = new NewTopic(topicName, 1, (short) 3);
+            topics.add(topic);
+        }
+
+        client.createTopics(topics);
+        client.close();
+
 
         final StreamsBuilder builder = new StreamsBuilder();
 
