@@ -5,7 +5,10 @@ import com.fasterxml.jackson.databind.MappingIterator;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.csv.CsvMapper;
 import com.fasterxml.jackson.dataformat.csv.CsvSchema;
+import org.apache.kafka.clients.admin.NewTopic;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Bean;
+import org.springframework.kafka.config.TopicBuilder;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -41,7 +44,13 @@ public class IrisKafkaFeed {
 
     }
 
-    //TODO: create iris topic using Admin API so this works with Confluent Cloud
+    @Bean
+    public NewTopic createIrisTopic() {
+        return TopicBuilder.name("iris")
+                .partitions(1)
+                .replicas(3)
+                .build();
+    }
 
     @Scheduled(fixedDelay = 1000L)
     private void publishIrisRecord() throws JsonProcessingException {
