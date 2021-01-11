@@ -17,9 +17,8 @@ import org.apache.kafka.streams.kstream.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-
-import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URL;
 import java.time.Duration;
 import java.util.*;
@@ -39,13 +38,10 @@ class IrisClassifier {
 
     void run() throws IOException {
 
-        // create and load default properties
+        // load properties
         Properties props = new Properties();
-        String rootPath = Thread.currentThread().getContextClassLoader().getResource("").getPath();
-        String propsPath = rootPath + "config.properties";
-        FileInputStream in = new FileInputStream(propsPath);
-        props.load(in);
-        in.close();
+        InputStream input = IrisClassifier.class.getClassLoader().getResourceAsStream("config.properties");
+        props.load(input);
 
         IrisRecordSerde irisRecordSerde = new IrisRecordSerde();
         IrisPredictionRecordSerde irisPredictionRecordSerde = new IrisPredictionRecordSerde();
