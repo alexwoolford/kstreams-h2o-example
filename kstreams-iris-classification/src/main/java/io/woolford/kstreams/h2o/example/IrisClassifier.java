@@ -78,14 +78,11 @@ class IrisClassifier {
         // write the classified records back to Kafka
         irisStreamClassified.to("iris-classified");
 
-        // one-minute interval
-        TimeWindows interval = TimeWindows.of(Duration.ofMinutes(1));
-
         // create one-minute tumbling windows containing actual/predicted counts
         KTable<Windowed<IrisClassifiedRecord>, Long> irisClassifiedWindowCounts = irisStreamClassified
                 .selectKey((k, v) -> k)
                 .groupByKey()
-                .windowedBy(TimeWindows.of(interval.sizeMs))
+                .windowedBy(TimeWindows.of(Duration.ofMinutes(1)))
                 .count();
 
         // write the windowed counts to iris-classified-window topic
